@@ -12,81 +12,68 @@ public class UserDaoJDBCImpl implements UserDao {
 
     public void createUsersTable() {
         try (Statement statement = conn.createStatement()) {
-            statement.executeUpdate("CREATE TABLE user "
-                    + "(id BIGINT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255),"
-                    + " last_name VARCHAR(255), age INT)");
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS users" +
+                    "(id BIGINT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(20), lastname VARCHAR(20), age INT(2))");
         } catch (SQLException e) {
-//            e.printStackTrace();
+            e.printStackTrace();
         }
     }
 
     public void dropUsersTable() {
         try (Statement statement = conn.createStatement()) {
-            statement.executeUpdate("DROP TABLE user");
+            statement.executeUpdate("DROP TABLE IF EXISTS users");
         } catch (SQLException e) {
-//            e.printStackTrace();
+            e.printStackTrace();
         }
     }
 
-    public void saveUser(String name, String lastName, byte age) throws SQLException {
-        try (PreparedStatement pstm = conn.prepareStatement("INSERT INTO user (name, last_name, age) "
-                + "VALUES (?, ?, ?)")) {
-            conn.setAutoCommit(false);
+    public void saveUser(String name, String lastName, byte age) {
+        try (PreparedStatement pstm = conn.prepareStatement("INSERT INTO users ( name, lastname, age) " +
+                "VALUES (?,?,?)")) {
             pstm.setString(1, name);
             pstm.setString(2, lastName);
             pstm.setByte(3, age);
             pstm.executeUpdate();
-            conn.commit();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            conn.rollback();
-        } finally {
-            conn.setAutoCommit(true);
+        } catch (SQLException s) {
+            s.printStackTrace();
         }
     }
 
-    public void removeUserById(long id) throws SQLException {
-        try (PreparedStatement pstm = conn.prepareStatement("DELETE FROM user WHERE id = ?")) {
-            conn.setAutoCommit(false);
+    public void removeUserById(long id) {
+        try (PreparedStatement pstm = conn.prepareStatement("DELETE FROM users WHERE id = ?")) {
             pstm.setLong(1, id);
             pstm.executeUpdate();
-            conn.commit();
         } catch (SQLException e) {
             e.printStackTrace();
-            conn.rollback();
-        } finally {
-            conn.setAutoCommit(true);
         }
+
     }
 
     public List<User> getAllUsers() {
-        List<User> users = new ArrayList<>();
-
-        try (ResultSet resultSet = conn.createStatement().executeQuery("SELECT * FROM user")) {
+        List<User> userList = new ArrayList<>();
+        try (Statement statement = conn.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("SELECT * from users");
             while (resultSet.next()) {
                 User user = new User(resultSet.getString("name"),
-                        resultSet.getString("last_name"),
+                        resultSet.getString("lastname"),
                         resultSet.getByte("age"));
                 user.setId(resultSet.getLong("id"));
-                users.add(user);
+                userList.add(user);
+
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } catch (SQLException s) {
+            s.printStackTrace();
         }
+        return userList;
 
-        return users;
     }
 
-    public void cleanUsersTable() throws SQLException {
+    public void cleanUsersTable() {
         try (Statement statement = conn.createStatement()) {
-            conn.setAutoCommit(false);
-            statement.executeUpdate("TRUNCATE TABLE user");
-            conn.commit();
+            statement.executeUpdate("TRUNCATE TABLE users");
         } catch (SQLException e) {
             e.printStackTrace();
-            conn.rollback();
-        } finally {
-            conn.setAutoCommit(true);
         }
     }
+
 }
